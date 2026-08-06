@@ -108,7 +108,6 @@ public class SurfaceAnimator {
     private OnAnimationFinishedCallback getFinishedCallback(
             @Nullable OnAnimationFinishedCallback staticAnimationFinishedCallback) {
         return (type, anim) -> {
-            WindowManagerService.boostPriorityForLockedSection();
             synchronized (mService.mGlobalLock) {
                 final SurfaceAnimator target = mService.mAnimationTransferMap.remove(anim);
                 if (target != null) {
@@ -143,7 +142,6 @@ public class SurfaceAnimator {
                 }
                 mAnimationFinished = true;
             }
-            WindowManagerService.resetPriorityAfterLockedSection();
         };
     }
 

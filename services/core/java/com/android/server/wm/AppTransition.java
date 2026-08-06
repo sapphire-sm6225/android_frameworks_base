@@ -1137,7 +1137,6 @@ public class AppTransition implements Dump {
                 } catch (RemoteException e) {
                     Slog.w(TAG, "Failed to fetch app transition specs: " + e);
                 }
-                WindowManagerService.boostPriorityForLockedSection();
                 synchronized (mService.mGlobalLock) {
                     mNextAppTransitionAnimationsSpecsPending = false;
                     overridePendingAppTransitionMultiThumb(specs,
@@ -1146,7 +1145,6 @@ public class AppTransition implements Dump {
                     mNextAppTransitionFutureCallback = null;
                     mService.requestTraversal();
                 }
-                WindowManagerService.resetPriorityAfterLockedSection();
             });
         }
     }
@@ -1583,30 +1581,25 @@ public class AppTransition implements Dump {
     }
 
     private void handleAppTransitionTimeout() {
-        WindowManagerService.boostPriorityForLockedSection();
-        try {
-            synchronized (mService.mGlobalLock) {
-                final DisplayContent dc = mDisplayContent;
-                if (dc == null) {
-                    return;
-                }
-                notifyAppTransitionTimeoutLocked();
-                if (isTransitionSet() || !dc.mOpeningApps.isEmpty() || !dc.mClosingApps.isEmpty()
-                        || !dc.mChangingContainers.isEmpty()) {
-                    ProtoLog.v(WM_DEBUG_APP_TRANSITIONS,
-                                "*** APP TRANSITION TIMEOUT. displayId=%d isTransitionSet()=%b "
-                                        + "mOpeningApps.size()=%d mClosingApps.size()=%d "
-                                        + "mChangingApps.size()=%d",
-                                dc.getDisplayId(), dc.mAppTransition.isTransitionSet(),
-                                dc.mOpeningApps.size(), dc.mClosingApps.size(),
-                                dc.mChangingContainers.size());
-
-                    setTimeout();
-                    mService.mWindowPlacerLocked.performSurfacePlacement();
-                }
+        synchronized (mService.mGlobalLock) {
+            final DisplayContent dc = mDisplayContent;
+            if (dc == null) {
+                return;
             }
-        } finally {
-            WindowManagerService.resetPriorityAfterLockedSection();
+            notifyAppTransitionTimeoutLocked();
+            if (isTransitionSet() || !dc.mOpeningApps.isEmpty() || !dc.mClosingApps.isEmpty()
+                    || !dc.mChangingContainers.isEmpty()) {
+                ProtoLog.v(WM_DEBUG_APP_TRANSITIONS,
+                            "*** APP TRANSITION TIMEOUT. displayId=%d isTransitionSet()=%b "
+                                    + "mOpeningApps.size()=%d mClosingApps.size()=%d "
+                                    + "mChangingApps.size()=%d",
+                            dc.getDisplayId(), dc.mAppTransition.isTransitionSet(),
+                            dc.mOpeningApps.size(), dc.mClosingApps.size(),
+                            dc.mChangingContainers.size());
+
+                setTimeout();
+                mService.mWindowPlacerLocked.performSurfacePlacement();
+            }
         }
     }
 

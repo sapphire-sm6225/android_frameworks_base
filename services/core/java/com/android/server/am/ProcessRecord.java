@@ -1569,11 +1569,9 @@ class ProcessRecord implements WindowProcessListener {
 
     @Override
     public void updateServiceConnectionActivities() {
-        ActivityManagerService.boostPriorityForLockedSection();
         synchronized (mService) {
             mService.mServices.updateServiceConnectionActivitiesLocked(mServices);
         }
-        ActivityManagerService.resetPriorityAfterLockedSection();
     }
 
     @Override
@@ -1585,18 +1583,15 @@ class ProcessRecord implements WindowProcessListener {
 
     @Override
     public void setPendingUiCleanAndForceProcessStateUpTo(int newState) {
-        ActivityManagerService.boostPriorityForLockedSection();
         synchronized (mService) {
             setPendingUiClean(true);
             mState.forceProcessStateUpTo(newState);
         }
-        ActivityManagerService.resetPriorityAfterLockedSection();
     }
 
     @Override
     public void updateProcessInfo(boolean updateServiceConnectionActivities, boolean activityChange,
             boolean updateOomAdj) {
-        ActivityManagerService.boostPriorityForLockedSection();
         synchronized (mService) {
             if (updateServiceConnectionActivities) {
                 mService.mServices.updateServiceConnectionActivitiesLocked(mServices);
@@ -1612,7 +1607,6 @@ class ProcessRecord implements WindowProcessListener {
                 mService.updateOomAdjLocked(this, OOM_ADJ_REASON_ACTIVITY);
             }
         }
-        ActivityManagerService.resetPriorityAfterLockedSection();
     }
 
     /**
@@ -1631,7 +1625,6 @@ class ProcessRecord implements WindowProcessListener {
     @Override
     public void onStartActivity(int topProcessState, boolean setProfileProc, String packageName,
             long versionCode) {
-        ActivityManagerService.boostPriorityForLockedSection();
         synchronized (mService) {
             mWaitingToKill = null;
             if (setProfileProc) {
@@ -1650,16 +1643,13 @@ class ProcessRecord implements WindowProcessListener {
             mService.mProcessStateController.setHasShownUi(this, true);
             mState.forceProcessStateUpTo(topProcessState);
         }
-        ActivityManagerService.resetPriorityAfterLockedSection();
     }
 
     @Override
     public void appDied(String reason) {
-        ActivityManagerService.boostPriorityForLockedSection();
         synchronized (mService) {
             mService.appDiedLocked(this, reason);
         }
-        ActivityManagerService.resetPriorityAfterLockedSection();
     }
 
     @Override
@@ -1668,14 +1658,12 @@ class ProcessRecord implements WindowProcessListener {
             Slog.wtf(TAG, "system can't run remote animation");
             return;
         }
-        ActivityManagerService.boostPriorityForLockedSection();
         synchronized (mService) {
             if (mService.mProcessStateController.setRunningRemoteAnimation(this,
                     runningRemoteAnimation)) {
                 mService.mProcessStateController.runUpdate(this, OOM_ADJ_REASON_UI_VISIBILITY);
             }
         }
-        ActivityManagerService.resetPriorityAfterLockedSection();
     }
 
     public long getInputDispatchingTimeoutMillis() {

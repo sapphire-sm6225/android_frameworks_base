@@ -1394,13 +1394,11 @@ class BackNavigationController {
                 return;
             }
             startTransaction.addTransactionCommittedListener(Runnable::run, () -> {
-                WindowManagerService.boostPriorityForLockedSection();
                 synchronized (mWindowManagerService.mGlobalLock) {
                     if (mOpenAnimAdaptor != null) {
                         mOpenAnimAdaptor.cleanUpWindowlessSurface(true);
                     }
                 }
-                WindowManagerService.resetPriorityAfterLockedSection();
             });
         }
 
@@ -1969,31 +1967,26 @@ class BackNavigationController {
                 return new IBackAnimationFinishedCallback.Stub() {
                     @Override
                     public void onAnimationFinished(boolean triggerBack) {
-                        WindowManagerService.boostPriorityForLockedSection();
-                        try {
-                            synchronized (mWindowManagerService.mGlobalLock) {
-                                if (!mComposed) {
-                                    // animation was canceled
-                                    return;
-                                }
-                                if (Flags.migratePredictiveBackTransition()) {
-                                    if (mOpenAnimAdaptor == null
-                                            || mOpenAnimAdaptor.mPreparedOpenTransition == null) {
-                                        // no open nor close transition, this is window animation
-                                        if (!triggerBack) {
-                                            clearBackAnimateTarget(true /* cancel */);
-                                        }
-                                    }
-                                } else {
+                        synchronized (mWindowManagerService.mGlobalLock) {
+                            if (!mComposed) {
+                                // animation was canceled
+                                return;
+                            }
+                            if (Flags.migratePredictiveBackTransition()) {
+                                if (mOpenAnimAdaptor == null
+                                        || mOpenAnimAdaptor.mPreparedOpenTransition == null) {
+                                    // no open nor close transition, this is window animation
                                     if (!triggerBack) {
                                         clearBackAnimateTarget(true /* cancel */);
-                                    } else {
-                                        mWaitTransition = true;
                                     }
                                 }
+                            } else {
+                                if (!triggerBack) {
+                                    clearBackAnimateTarget(true /* cancel */);
+                                } else {
+                                    mWaitTransition = true;
+                                }
                             }
-                        } finally {
-                            WindowManagerService.resetPriorityAfterLockedSection();
                         }
                     }
                 };
@@ -2230,7 +2223,6 @@ class BackNavigationController {
             ProtoLog.d(WM_DEBUG_BACK_PREVIEW, "onBackNavigationDone backType=%s, "
                     + "triggerBack=%b", backType, triggerBack);
 
-            WindowManagerService.boostPriorityForLockedSection();
             synchronized (mWindowManagerService.mGlobalLock) {
                 mNavigationMonitor.stopMonitorForRemote();
                 mBackAnimationInProgress = false;
@@ -2239,22 +2231,16 @@ class BackNavigationController {
                 mPendingAnimation = null;
                 mPendingAnimationBuilder = null;
             }
-            WindowManagerService.resetPriorityAfterLockedSection();
         }
         if (result.getBoolean(BackNavigationInfo.KEY_GESTURE_FINISHED)) {
-            WindowManagerService.boostPriorityForLockedSection();
-            try {
-                synchronized (mWindowManagerService.mGlobalLock) {
-                    final AnimationHandler ah = mAnimationHandler;
-                    if (!ah.mComposed || ah.mWaitTransition || ah.mOpenActivities == null
-                            || (ah.mSwitchType != AnimationHandler.TASK_SWITCH
-                            && ah.mSwitchType != AnimationHandler.ACTIVITY_SWITCH)) {
-                        return;
-                    }
-                    setLaunchBehind(mAnimationHandler.mOpenActivities);
+            synchronized (mWindowManagerService.mGlobalLock) {
+                final AnimationHandler ah = mAnimationHandler;
+                if (!ah.mComposed || ah.mWaitTransition || ah.mOpenActivities == null
+                        || (ah.mSwitchType != AnimationHandler.TASK_SWITCH
+                        && ah.mSwitchType != AnimationHandler.ACTIVITY_SWITCH)) {
+                    return;
                 }
-            } finally {
-                WindowManagerService.resetPriorityAfterLockedSection();
+                setLaunchBehind(mAnimationHandler.mOpenActivities);
             }
         }
     }
